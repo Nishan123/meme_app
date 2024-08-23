@@ -1,48 +1,32 @@
-class MemeModel {
-  MemeModel({
-    required this.postLink,
-    required this.subreddit,
-    required this.title,
-    required this.url,
-    required this.nsfw,
-    required this.spoiler,
-    required this.author,
-    required this.ups,
-    required this.preview,
-  });
-  late final String postLink;
-  late final String subreddit;
-  late final String title;
-  late final String url;
-  late final bool nsfw;
-  late final bool spoiler;
-  late final String author;
-  late final int ups;
-  late final List<String> preview;
-  
-  MemeModel.fromJson(Map<String, dynamic> json){
-    postLink = json['postLink'];
-    subreddit = json['subreddit'];
-    title = json['title'];
-    url = json['url'];
-    nsfw = json['nsfw'];
-    spoiler = json['spoiler'];
-    author = json['author'];
-    ups = json['ups'];
-    preview = List.castFrom<dynamic, String>(json['preview']);
-  }
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
-  Map<String, dynamic> toJson() {
-    final _data = <String, dynamic>{};
-    _data['postLink'] = postLink;
-    _data['subreddit'] = subreddit;
-    _data['title'] = title;
-    _data['url'] = url;
-    _data['nsfw'] = nsfw;
-    _data['spoiler'] = spoiler;
-    _data['author'] = author;
-    _data['ups'] = ups;
-    _data['preview'] = preview;
-    return _data;
+class Meme {
+  final String url;
+  final String title;
+  final String subreddit;
+
+  Meme({required this.url, required this.title, required this.subreddit});
+
+  factory Meme.fromJson(Map<String, dynamic> json) {
+    return Meme(
+      url: json['url'],
+      title: json['title'],
+      subreddit: json['subreddit'] ?? 'No description available',
+    );
+  }
+}
+
+class MemeFetcher {
+  final String apiUrl = "https://meme-api.com/gimme";
+
+  Future<Meme> fetchMeme() async {
+    final response = await http.get(Uri.parse(apiUrl));
+    if (response.statusCode == 200) {
+      var data = jsonDecode(response.body);
+      return Meme.fromJson(data);
+    } else {
+      throw Exception("Failed to load meme");
+    }
   }
 }

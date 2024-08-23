@@ -1,32 +1,27 @@
-import 'package:api_practice/meme_fetcher.dart';
+import 'package:api_practice/meme_model.dart';
 import 'package:flutter/material.dart';
 
 class MemeScreen extends StatefulWidget {
   const MemeScreen({super.key});
 
   @override
-  State<MemeScreen> createState() => _MemeScreenState();
+  _MemeScreenState createState() => _MemeScreenState();
 }
 
 class _MemeScreenState extends State<MemeScreen> {
-  String? memeUrl;
+  late Future<Meme> futureMeme;
+  final MemeFetcher memeFetcher = MemeFetcher();
 
-  MemeFetcher memeFetcher = MemeFetcher();
   @override
   void initState() {
     super.initState();
-    loadMeme();
+    futureMeme = memeFetcher.fetchMeme();
   }
 
-  void loadMeme() async {
-    try {
-      String newMeme = await memeFetcher.fetchMeme();
-      setState(() {
-        memeUrl = newMeme;
-      });
-    } catch (e) {
-      print(e);
-    }
+  void _reloadMeme() {
+    setState(() {
+      futureMeme = memeFetcher.fetchMeme();
+    });
   }
 
   @override
@@ -35,56 +30,67 @@ class _MemeScreenState extends State<MemeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          "Random Reddit Meme",
-          style: TextStyle(color: Colors.white),
-        ),
+        title: const Text('Rndom Reddit Memes'),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Colors.yellow[200],
+        elevation: 5,
+        shadowColor: const Color.fromARGB(197, 0, 0, 0),
       ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: SafeArea(
-            child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              Container(
-                color: Colors.blue,
-                height: mq.height * 0.5,
-                width: mq.width,
-                child: memeUrl != null
-                    ? Image.network(memeUrl!)
-                    : const Center(
-                        child: Text(
-                          "Your Meme is Loading....",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 15),
+          child: Center(
+            child: FutureBuilder<Meme>(
+              future: futureMeme,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                } else if (snapshot.hasError) {
+                  return Text('Error: ${snapshot.error}');
+                } else if (snapshot.hasData) {
+                  Meme? meme = snapshot.data;
+                  return Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (meme != null) ...[
+                        Text(
+                          "Subreddit : ${meme.subreddit}",
+                          style: const TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(meme.title),
+                        const SizedBox(height: 8),
+                        Image.network(meme.url),
+                        const SizedBox(height: 16),
+                      ],
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: mq.width,
+                        height: 50,
+                        
+                        child: ElevatedButton(
+                          onPressed: _reloadMeme,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.yellow[200],
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            "Next Meme 🤣",
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                         ),
                       ),
-              ),
-              SizedBox(
-                width: mq.width,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    loadMeme();
-                  },
-                  style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blueAccent),
-                  child: const Text(
-                    "Next Meme 🤣",
-                    style: TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                ),
-              )
-            ],
+                    ],
+                  );
+                } else {
+                  return const Text('No meme data available');
+                }
+              },
+            ),
           ),
-        )),
+        ),
       ),
     );
   }
